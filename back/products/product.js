@@ -89,4 +89,60 @@ router.post('/add', (req, res) => {
     });
 });
 
+// Modifier un produit
+router.put('/edit/:id', (req, res) => {
+    const productId = req.params.id; // Récupère l'id du produit dans l'URL
+    const { name, price, stock } = req.body; // Récupère les nouvelles valeurs du produit dans le body
+
+    // Vérifier que les champs obligatoires sont présents (par exemple, name et price)
+    if (!name || !price) {
+        return res.status(400).json({ error: 'Le nom et le prix sont obligatoires' });
+    }
+
+    // Préparer la requête SQL pour récupérer le stock actuel du produit
+    connection.query('SELECT stock FROM product WHERE id = ?', [productId], (err, results) => {
+        if (err) {
+            console.error('Erreur SQL : ', err.message);
+            return res.status(500).json({ error: 'Erreur lors de la récupération du produit' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Produit non trouvé' });
+        }
+
+        // Récupérer le stock actuel
+        const currentStock = results[0].stock;
+
+        // Si le stock n'est pas spécifié, on garde le stock actuel
+        const updatedStock = stock !== undefined ? stock : currentStock;
+
+        // Préparer la requête SQL pour mettre à jour le produit
+        const query = 'UPDATE product SET name = ?, price = ?, stock = ? WHERE id = ?';
+
+        // Effectuer la mise à jour
+        connection.query(query, [name, price, updatedStock, productId], (err, results) => {
+            if (err) {
+                console.error('Erreur SQL lors de la mise à jour du produit : ', err.message);
+                return res.status(500).json({ error: 'Erreur lors de la mise à jour du produit' });
+            }
+
+            // Vérifier si le produit a bien été trouvé et mis à jour
+            if (results.affectedRows === 0) {
+                return res.status(404).json({ error: 'Produit non trouvé' });
+            }
+
+            // Si la mise à jour a réussi, renvoyer une réponse
+            res.status(200).json({
+                message: `Produit avec ID ${productId} mis à jour avec succès`,
+                updatedProduct: {
+                    id: productId,
+                    name: name,
+                    price: price,
+                    stock: updatedStock,  // Afficher le stock mis à jour
+                },
+            });
+        });
+    });
+});
+
 module.exports = router;
