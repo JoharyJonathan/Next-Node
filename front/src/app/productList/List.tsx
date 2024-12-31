@@ -43,7 +43,7 @@ export default function List() {
                 <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
                     {products.map((product) => (
                         <div key={product.id} className="group relative">
-                            <Link href={"#"}>
+                            <Link href={`/productFeature/${product.id}`}>
                                 <img
                                     alt={product.imageAlt || "Product image"}
                                     src={product.imageSrc || "https://tailwindui.com/plus/img/ecommerce-images/product-page-01-related-product-01.jpg"}
@@ -58,7 +58,7 @@ export default function List() {
                                             {product.name}
                                         </Link>
                                     </h3>
-                                    <p className="mt-1 text-sm text-gray-500">{product.color || "N/A"}</p>
+                                    <p className="mt-1 text-sm text-gray-500">{product.stock || "N/A"} Available</p>
                                 </div>
                                 <p className="text-sm font-medium text-gray-900">${product.price || "N/A"}</p>
                             </div>

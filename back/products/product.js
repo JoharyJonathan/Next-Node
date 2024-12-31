@@ -4,6 +4,32 @@ const connection = require('../db');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
+// Rechercher un produit par nom
+router.get('/search', (req, res) => {
+    const productName = sanitizeInput(req.query.name);
+
+    if (!productName) {
+        return res.status(400).json({ error: 'Le paramètre "name" est obligatoire pour effectuer une recherche' });
+    }
+
+    // Requête SQL pour rechercher les produits correspondant au nom
+    const query = 'SELECT * FROM product WHERE name LIKE ?';
+    const searchTerm = `%${productName}%`; // Ajouter des wildcards pour une recherche partielle
+
+    connection.query(query, [searchTerm], (err, results) => {
+        if (err) {
+            console.error('Erreur SQL lors de la recherche du produit : ', err.message);
+            return res.status(500).json({ error: 'Erreur lors de la recherche du produit' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Aucun produit trouvé pour ce nom' });
+        }
+
+        res.status(200).json(results); // Retourner les résultats trouvés
+    });
+});
+
 // Voir tous les produits disponibles
 router.get('/all', (req, res) => {
     connection.query('SELECT * FROM product', (err, results) => {
