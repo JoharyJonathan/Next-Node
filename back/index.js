@@ -8,11 +8,15 @@ const PORT = process.env.PORT;
 // Authentifications endpoints
 const authRoutes = require('./auth/auth');
 
+// Products endpoints
+const productRoutes = require('./products/product');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 app.use('/auth', authRoutes);
+app.use('/product', productRoutes);
 
 // Test message
 app.get('/api/message', (req, res) => {
