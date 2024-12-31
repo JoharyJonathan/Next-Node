@@ -165,4 +165,45 @@ router.get('/orders/:userId', (req, res) => {
     });
 });
 
+// Supprimer une commande
+router.delete('/orders/:orderId', (req, res) => {
+    const orderId = req.params.orderId;
+
+    if (!orderId) {
+        return res.status(400).json({ error: 'orderId est obligatoire.' });
+    }
+
+    // Étape 1 : Supprimer les produits liés à la commande
+    const deleteProductsQuery = `
+        DELETE FROM ProductOrder
+        WHERE orderId = ?
+    `;
+
+    connection.query(deleteProductsQuery, [orderId], (err) => {
+        if (err) {
+            console.error('Erreur SQL lors de la suppression des produits :', err.message);
+            return res.status(500).json({ error: 'Erreur lors de la suppression des produits.' });
+        }
+
+        // Étape 2 : Supprimer la commande elle-même
+        const deleteOrderQuery = `
+            DELETE FROM Orders
+            WHERE id = ?
+        `;
+
+        connection.query(deleteOrderQuery, [orderId], (err, result) => {
+            if (err) {
+                console.error('Erreur SQL lors de la suppression de la commande :', err.message);
+                return res.status(500).json({ error: 'Erreur lors de la suppression de la commande.' });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'Commande non trouvée.' });
+            }
+
+            res.status(200).json({ message: 'Commande supprimée avec succès.' });
+        });
+    });
+});
+
 module.exports = router;
