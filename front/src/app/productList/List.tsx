@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link";
   
 export default function List() {
     const [products, setProducts] = useState([]);
@@ -42,18 +43,20 @@ export default function List() {
                 <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
                     {products.map((product) => (
                         <div key={product.id} className="group relative">
-                            <img
-                                alt={product.imageAlt || "Product image"}
-                                src={product.imageSrc || "https://tailwindui.com/plus/img/ecommerce-images/product-page-01-related-product-01.jpg"}
-                                className="aspect-square w-full rounded-md bg-gray-200 object-cover group-hover:opacity-75 lg:aspect-auto lg:h-80"
-                            />
+                            <Link href={"#"}>
+                                <img
+                                    alt={product.imageAlt || "Product image"}
+                                    src={product.imageSrc || "https://tailwindui.com/plus/img/ecommerce-images/product-page-01-related-product-01.jpg"}
+                                    className="aspect-square w-full rounded-md bg-gray-200 object-cover group-hover:opacity-75 lg:aspect-auto lg:h-80"
+                                />
+                            </Link>
                             <div className="mt-4 flex justify-between">
                                 <div>
                                     <h3 className="text-sm text-gray-700">
-                                        <a href={product.href || "#"}>
+                                        <Link href={`/productFeature/${product.id}`}>
                                             <span aria-hidden="true" className="absolute inset-0" />
                                             {product.name}
-                                        </a>
+                                        </Link>
                                     </h3>
                                     <p className="mt-1 text-sm text-gray-500">{product.color || "N/A"}</p>
                                 </div>

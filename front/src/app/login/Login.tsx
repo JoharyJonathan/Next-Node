@@ -87,7 +87,7 @@ export default function Login() {
             <div className="flex flex-col mt-4 items-center justify-center text-sm">
                 <h3>
                     <span className="cursor-default dark:text-gray-300">
-                        Don't Have account?
+                      Don&apos;t Have account?
                     </span>
                     <Link
                         className="group text-blue-400 transition-all duration-100 ease-in-out"
