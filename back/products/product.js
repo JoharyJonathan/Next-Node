@@ -145,4 +145,28 @@ router.put('/edit/:id', (req, res) => {
     });
 });
 
+// Supprimer un produit
+router.delete('/delete/:id', (req, res) => {
+    const productId = req.params.id;  // Récupérer l'ID du produit à supprimer
+
+    connection.query(
+        'DELETE FROM product WHERE id = ?',
+        [productId],
+        (err, results) => {
+            if (err) {
+                console.error('Erreur SQL : ', err.message);
+                return res.status(500).json({ error: 'Erreur lors de la suppression du produit' });
+            }
+
+            // Si aucun produit n'a été supprimé, cela signifie qu'il n'a pas été trouvé
+            if (results.affectedRows === 0) {
+                return res.status(404).json({ error: 'Produit non trouvé' });
+            }
+
+            // Si la suppression a réussi, renvoyer un message de confirmation
+            res.status(204).send();  // Code 204 pour "No Content"
+        }
+    );
+});
+
 module.exports = router;
