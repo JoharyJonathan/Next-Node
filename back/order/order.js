@@ -100,4 +100,69 @@ function updateOrderTotal(orderId, res) {
     });
 }
 
+// Récupérer les commandes d'un utilisateur
+router.get('/orders/:userId', (req, res) => {
+    const userId = req.params.userId;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'userId est obligatoire.' });
+    }
+
+    // Étape 1 : Récupérer les commandes de l'utilisateur
+    const query = `
+        SELECT o.id AS orderId, o.total, o.status
+        FROM Orders o
+        WHERE o.userId = ?
+        ORDER BY o.id DESC
+    `;
+
+    connection.query(query, [userId], (err, orders) => {
+        if (err) {
+            console.error('Erreur SQL lors de la récupération des commandes :', err.message);
+            return res.status(500).json({ error: 'Erreur lors de la récupération des commandes.' });
+        }
+
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Aucune commande trouvée pour cet utilisateur.' });
+        }
+
+        // Étape 2 : Récupérer les produits pour chaque commande
+        const orderIds = orders.map(order => order.orderId);
+        const productQuery = `
+            SELECT po.orderId, po.productId, po.quantity
+            FROM ProductOrder po
+            WHERE po.orderId IN (?)
+        `;
+
+        connection.query(productQuery, [orderIds], (err, products) => {
+            if (err) {
+                console.error('Erreur SQL lors de la récupération des produits :', err.message);
+                return res.status(500).json({ error: 'Erreur lors de la récupération des produits.' });
+            }
+
+            // Organiser les produits par commande
+            const productsByOrder = {};
+            products.forEach(product => {
+                if (!productsByOrder[product.orderId]) {
+                    productsByOrder[product.orderId] = [];
+                }
+                productsByOrder[product.orderId].push({
+                    productId: product.productId,
+                    quantity: product.quantity,
+                });
+            });
+
+            // Associer les produits aux commandes
+            const result = orders.map(order => ({
+                orderId: order.orderId,
+                total: order.total,
+                status: order.status,
+                products: productsByOrder[order.orderId] || [],
+            }));
+
+            res.status(200).json(result);
+        });
+    });
+});
+
 module.exports = router;
