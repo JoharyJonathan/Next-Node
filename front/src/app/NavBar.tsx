@@ -176,12 +176,12 @@ export default function NavBar() {
                                             Your Profile
                                         </Link>
                                         <Link
-                                            href="#"
+                                            href="/cart"
                                             className="block px-4 py-2 text-sm text-gray-700"
                                             role="menuitem"
                                             id="user-menu-item-1"
                                         >
-                                            Settings
+                                            My Cart
                                         </Link>
                                         <button
                                             onClick={logout}
