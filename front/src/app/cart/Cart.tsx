@@ -8,13 +8,19 @@ import axios from 'axios'
 export default function Cart({ userId }) {
   const [open, setOpen] = useState(true)
   const [orders, setOrders] = useState([]) // Stocke les commandes
+  const [total, setTotal] = useState(0) // Stocke le total général
 
   useEffect(() => {
     // Fonction pour récupérer les commandes de l'utilisateur
     const fetchOrders = async () => {
       try {
         const response = await axios.get(`http://localhost:5000/order/orders/${userId}`)
-        setOrders(response.data)
+        const ordersData = response.data
+        setOrders(ordersData)
+
+        // Calcul du total général
+        const totalAmount = ordersData.reduce((sum, order) => sum + order.total, 0)
+        setTotal(totalAmount)
       } catch (error) {
         console.error('Erreur lors de la récupération des commandes :', error)
       }
@@ -68,8 +74,8 @@ export default function Cart({ userId }) {
                               <ul>
                                 {order.products.map((product) => (
                                   <li key={product.productId} className="flex py-4">
-                                    <p>Product ID: {product.productId}</p>
-                                    <p>Quantity: {product.quantity}</p>
+                                    <p>{product.productName}</p>
+                                    <p className='ml-2'> x {product.quantity}</p>
                                   </li>
                                 ))}
                               </ul>
@@ -87,7 +93,7 @@ export default function Cart({ userId }) {
                 <div className="border-t border-gray-200 px-4 py-6 sm:px-6">
                   <div className="flex justify-between text-base font-medium text-gray-900">
                     <p>Subtotal</p>
-                    <p>$0.00</p>
+                    <p>${total.toFixed(2)}</p> {/* Affichage du total général */}
                   </div>
                   <div className="mt-6">
                     <a
