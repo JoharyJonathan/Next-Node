@@ -31,6 +31,22 @@ export default function Cart({ userId }) {
     }
   }, [userId])
 
+  // Suppression d'une commande
+  const removeOrder = async (orderId) => {
+    try {
+        await axios.delete(`http://localhost:5000/order/orders/${orderId}`)
+
+        // Mise a jour des commandes apres suppression
+        setOrders((prevOrders) => prevOrders.filter(order => order.orderId !== orderId))
+
+        // Mise a jour du total
+        const updatedTotal = orders.filter(order => order.orderId !== orderId).reduce((sum, order) => sum + order.total, 0)
+        setTotal(updatedTotal)
+    } catch (error) {
+        console.log('Erreur lors de la suppression de la commande :', error);
+    }
+  }
+
   return (
     <Dialog open={open} onClose={setOpen} className="relative z-10">
       <DialogBackdrop
@@ -43,12 +59,12 @@ export default function Cart({ userId }) {
           <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
             <DialogPanel
               transition
-              className="pointer-events-auto w-screen max-w-md transform transition duration-500 ease-in-out data-[closed]:translate-x-full sm:duration-700"
+              className="pointer-events-auto w-screen max-w-lg transform transition duration-500 ease-in-out data-[closed]:translate-x-full sm:duration-700"
             >
-              <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
-                <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+              <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-lg rounded-tl-lg rounded-bl-lg">
+                <div className="flex-1 overflow-y-auto px-6 py-8">
                   <div className="flex items-start justify-between">
-                    <DialogTitle className="text-lg font-medium text-gray-900">Shopping cart</DialogTitle>
+                    <DialogTitle className="text-2xl font-semibold text-gray-900">Your Cart</DialogTitle>
                     <div className="ml-3 flex h-7 items-center">
                       <button
                         type="button"
@@ -57,29 +73,42 @@ export default function Cart({ userId }) {
                       >
                         <span className="absolute -inset-0.5" />
                         <span className="sr-only">Close panel</span>
-                        <XMarkIcon aria-hidden="true" className="size-6" />
+                        <XMarkIcon aria-hidden="true" className="w-6 h-6" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="mt-8">
+                  <div className="mt-6">
                     <div className="flow-root">
                       {orders.length > 0 ? (
-                        <ul role="list" className="-my-6 divide-y divide-gray-200">
+                        <ul role="list" className="space-y-6">
                           {orders.map((order) => (
-                            <li key={order.orderId} className="flex py-6 flex-col">
-                              <h3 className="text-gray-900 font-medium">
-                                Order #{order.orderId} - {order.status}
-                              </h3>
+                            <li key={order.orderId} className="flex flex-col py-6 px-4 bg-gray-100 rounded-lg shadow-sm">
+                              <h3 className="text-xl font-medium text-gray-800 mb-2">Order #{order.orderId} - {order.status}</h3>
                               <ul>
                                 {order.products.map((product) => (
-                                  <li key={product.productId} className="flex py-4">
-                                    <p>{product.productName}</p>
-                                    <p className='ml-2'> x {product.quantity}</p>
+                                  <li key={product.productId} className="flex items-center justify-between py-4">
+                                    <div className="flex items-center">
+                                      {/* Affichage de l'image du produit */}
+                                      {product.imageUrl && (
+                                        <img 
+                                          src='https://tailwindui.com/plus/img/ecommerce-images/shopping-cart-page-04-product-01.jpg'
+                                          alt={product.productName} 
+                                          className="w-16 h-16 object-cover mr-4 rounded" 
+                                        />
+                                      )}
+                                      <p className="text-sm font-semibold text-gray-900">{product.productName}</p>
+                                    </div>
+                                    <p className="text-sm text-gray-500">x {product.quantity}</p>
                                   </li>
                                 ))}
                               </ul>
-                              <p>Total: ${order.total}</p>
+                              <div className='flex flex-row justify-between items-center'>
+                                <p className="mt-4 text-lg font-medium text-gray-900">Total: ${order.total.toFixed(2)}</p>
+                                <button className='font-medium text-gray-600 text-lg hover:text-red-500 mt-4' onClick={() => removeOrder(order.orderId)}>
+                                    Remove
+                                </button>
+                              </div>
                             </li>
                           ))}
                         </ul>
@@ -90,17 +119,17 @@ export default function Cart({ userId }) {
                   </div>
                 </div>
 
-                <div className="border-t border-gray-200 px-4 py-6 sm:px-6">
-                  <div className="flex justify-between text-base font-medium text-gray-900">
+                <div className="border-t border-gray-200 px-6 py-6">
+                  <div className="flex justify-between text-lg font-semibold text-gray-900">
                     <p>Subtotal</p>
                     <p>${total.toFixed(2)}</p> {/* Affichage du total général */}
                   </div>
                   <div className="mt-6">
                     <a
                       href="#"
-                      className="flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700"
+                      className="flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-4 text-lg font-medium text-white shadow-md hover:bg-indigo-700 transition duration-300 ease-in-out"
                     >
-                      Checkout
+                      Proceed to Checkout
                     </a>
                   </div>
                 </div>
