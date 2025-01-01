@@ -206,4 +206,66 @@ router.delete('/orders/:orderId', (req, res) => {
     });
 });
 
+// Modifier une commande
+router.put('/orders/:orderId', (req, res) => {
+    const orderId = req.params.orderId;
+    const { total, status, products } = req.body;
+
+    if (!orderId) {
+        return res.status(400).json({ error: 'orderId est obligatoire.' });
+    }
+
+    if (!products || !Array.isArray(products)) {
+        return res.status(400).json({ error: 'La liste des produits est obligatoire et doit être un tableau.' });
+    }
+
+    // Étape 1 : Mettre à jour les détails de la commande
+    const updateOrderQuery = `
+        UPDATE Orders
+        SET total = ?, status = ?
+        WHERE id = ?
+    `;
+
+    connection.query(updateOrderQuery, [total, status, orderId], (err, result) => {
+        if (err) {
+            console.error('Erreur SQL lors de la mise à jour de la commande :', err.message);
+            return res.status(500).json({ error: 'Erreur lors de la mise à jour de la commande.' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Commande non trouvée.' });
+        }
+
+        // Étape 2 : Supprimer les produits existants pour cette commande
+        const deleteProductsQuery = `
+            DELETE FROM ProductOrder
+            WHERE orderId = ?
+        `;
+
+        connection.query(deleteProductsQuery, [orderId], (err) => {
+            if (err) {
+                console.error('Erreur SQL lors de la suppression des anciens produits :', err.message);
+                return res.status(500).json({ error: 'Erreur lors de la suppression des anciens produits.' });
+            }
+
+            // Étape 3 : Ajouter les nouveaux produits
+            const insertProductQuery = `
+                INSERT INTO ProductOrder (orderId, productId, quantity)
+                VALUES ?
+            `;
+
+            const productValues = products.map(product => [orderId, product.productId, product.quantity]);
+
+            connection.query(insertProductQuery, [productValues], (err) => {
+                if (err) {
+                    console.error('Erreur SQL lors de l’ajout des nouveaux produits :', err.message);
+                    return res.status(500).json({ error: 'Erreur lors de l’ajout des nouveaux produits.' });
+                }
+
+                res.status(200).json({ message: 'Commande mise à jour avec succès.' });
+            });
+        });
+    });
+});
+
 module.exports = router;
