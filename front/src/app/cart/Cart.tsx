@@ -47,7 +47,14 @@ export default function Cart({ userId }) {
     }
   }
 
+  // Voir commande
+  const toggleOrder = () => {
+    setOpen(true);
+  }
+
   return (
+    <>
+    <button className='bg-green-500 hover:bg-green-600 p-3 rounded-lg flex justify-center my-4 text-white text-lg' onClick={toggleOrder}>Open</button>
     <Dialog open={open} onClose={setOpen} className="relative z-10">
       <DialogBackdrop
         transition
@@ -139,5 +146,6 @@ export default function Cart({ userId }) {
         </div>
       </div>
     </Dialog>
+    </>
   )
 }
