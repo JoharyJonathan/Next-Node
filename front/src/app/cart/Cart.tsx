@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import axios from 'axios'
+import { useRouter } from 'next/navigation'
 
 export default function Cart({ userId }) {
   const [open, setOpen] = useState(true)
   const [orders, setOrders] = useState([]) // Stocke les commandes
   const [total, setTotal] = useState(0) // Stocke le total général
+  const router = useRouter();
 
   useEffect(() => {
     // Fonction pour récupérer les commandes de l'utilisateur
@@ -50,6 +52,11 @@ export default function Cart({ userId }) {
   // Voir commande
   const toggleOrder = () => {
     setOpen(true);
+  }
+
+  // Maj Commande
+  const updateOrder = () => {
+    router.push('/updateCart');
   }
 
   return (
@@ -112,9 +119,14 @@ export default function Cart({ userId }) {
                               </ul>
                               <div className='flex flex-row justify-between items-center'>
                                 <p className="mt-4 text-lg font-medium text-gray-900">Total: ${order.total.toFixed(2)}</p>
-                                <button className='font-medium text-gray-600 text-lg hover:text-red-500 mt-4' onClick={() => removeOrder(order.orderId)}>
-                                    Remove
-                                </button>
+                                <div>
+                                  <button className='font-medium text-gray-600 text-lg hover:text-green-500 mt-4 mr-2' onClick={() => updateOrder()}>
+                                    Edit
+                                  </button>
+                                  <button className='font-medium text-gray-600 text-lg hover:text-red-500 mt-4' onClick={() => removeOrder(order.orderId)}>
+                                      Remove
+                                  </button>
+                                </div>
                               </div>
                             </li>
                           ))}
