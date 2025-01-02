@@ -126,10 +126,10 @@ router.get('/orders/:userId', (req, res) => {
             return res.status(404).json({ message: 'Aucune commande trouvée pour cet utilisateur.' });
         }
 
-        // Étape 2 : Récupérer les produits pour chaque commande avec leurs noms
+        // Étape 2 : Récupérer les produits pour chaque commande avec leurs noms et leurs prix
         const orderIds = orders.map(order => order.orderId);
         const productQuery = `
-            SELECT po.orderId, po.productId, po.quantity, p.name AS productName
+            SELECT po.orderId, po.productId, po.quantity, p.name AS productName, p.price AS productPrice
             FROM ProductOrder po
             JOIN Product p ON po.productId = p.id
             WHERE po.orderId IN (?)
@@ -151,6 +151,7 @@ router.get('/orders/:userId', (req, res) => {
                     productId: product.productId,
                     productName: product.productName,
                     quantity: product.quantity,
+                    price: product.productPrice,
                 });
             });
 

@@ -33,20 +33,23 @@ export default function UpdateCart() {
 
     const handleProductChange = (orderId, productId, field, value) => {
         setOrders((prevOrders) =>
-            prevOrders.map((order) =>
-                order.orderId === orderId
-                    ? {
-                          ...order,
-                          products: order.products.map((product) =>
-                              product.productId === productId
-                                  ? { ...product, [field]: value }
-                                  : product
-                          ),
-                      }
-                    : order
-            )
+            prevOrders.map((order) => {
+                if (order.orderId === orderId) {
+                    const updatedProducts = order.products.map((product) =>
+                        product.productId === productId
+                            ? { ...product, [field]: value }
+                            : product
+                    );
+                    return {
+                        ...order,
+                        products: updatedProducts,
+                        total: calculateTotal(updatedProducts),
+                    };
+                }
+                return order;
+            })
         );
-    };
+    };    
 
     const handleOrderChange = (orderId, field, value) => {
         setOrders((prevOrders) =>
@@ -98,6 +101,15 @@ export default function UpdateCart() {
         }
     };
 
+    //Calculer le total dynamiquement
+    const calculateTotal = (products) => {
+        return products.reduce((total, product) => {
+            const quantity = parseFloat(product.quantity) || 0;
+            const price = parseFloat(product.price) || 0;
+            return total + quantity * price;
+        }, 0);
+    };    
+
     if (loading) return <p className="text-center text-gray-600">Chargement des commandes...</p>;
 
     return (
@@ -118,6 +130,7 @@ export default function UpdateCart() {
                         <input
                             type="number"
                             value={order.total}
+                            readOnly
                             onChange={(e) =>
                                 handleOrderChange(order.orderId, "total", e.target.value)
                             }
@@ -150,6 +163,7 @@ export default function UpdateCart() {
                                 type="text"
                                 placeholder="Nom du produit"
                                 value={product.productName}
+                                readOnly
                                 onChange={(e) =>
                                     handleProductChange(
                                         order.orderId,
