@@ -222,50 +222,83 @@ router.put('/orders/:orderId', (req, res) => {
         return res.status(400).json({ error: 'La liste des produits est obligatoire et doit être un tableau.' });
     }
 
-    // Étape 1 : Mettre à jour les détails de la commande
-    const updateOrderQuery = `
-        UPDATE Orders
-        SET total = ?, status = ?
-        WHERE id = ?
+    // Étape 1 : Vérifier les stocks disponibles
+    const checkStockQuery = `
+        SELECT id, stock
+        FROM Product
+        WHERE id IN (?)
     `;
 
-    connection.query(updateOrderQuery, [total, status, orderId], (err, result) => {
+    const productIds = products.map(product => product.productId);
+
+    connection.query(checkStockQuery, [productIds], (err, results) => {
         if (err) {
-            console.error('Erreur SQL lors de la mise à jour de la commande :', err.message);
-            return res.status(500).json({ error: 'Erreur lors de la mise à jour de la commande.' });
+            console.error('Erreur SQL lors de la vérification des stocks :', err.message);
+            return res.status(500).json({ error: 'Erreur lors de la vérification des stocks.' });
         }
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Commande non trouvée.' });
+        // Vérifier que chaque produit a suffisamment de stock
+        const stockIssues = products.filter(product => {
+            const productInDb = results.find(p => p.id === product.productId);
+            return !productInDb || product.quantity > productInDb.stock;
+        });
+
+        if (stockIssues.length > 0) {
+            return res.status(400).json({
+                error: 'Quantité demandée supérieure au stock disponible pour certains produits.',
+                details: stockIssues.map(product => ({
+                    productId: product.productId,
+                    requested: product.quantity,
+                    available: results.find(p => p.id === product.productId)?.stock || 0,
+                })),
+            });
         }
 
-        // Étape 2 : Supprimer les produits existants pour cette commande
-        const deleteProductsQuery = `
-            DELETE FROM ProductOrder
-            WHERE orderId = ?
+        // Étape 2 : Mettre à jour les détails de la commande
+        const updateOrderQuery = `
+            UPDATE Orders
+            SET total = ?, status = ?
+            WHERE id = ?
         `;
 
-        connection.query(deleteProductsQuery, [orderId], (err) => {
+        connection.query(updateOrderQuery, [total, status, orderId], (err, result) => {
             if (err) {
-                console.error('Erreur SQL lors de la suppression des anciens produits :', err.message);
-                return res.status(500).json({ error: 'Erreur lors de la suppression des anciens produits.' });
+                console.error('Erreur SQL lors de la mise à jour de la commande :', err.message);
+                return res.status(500).json({ error: 'Erreur lors de la mise à jour de la commande.' });
             }
 
-            // Étape 3 : Ajouter les nouveaux produits
-            const insertProductQuery = `
-                INSERT INTO ProductOrder (orderId, productId, quantity)
-                VALUES ?
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'Commande non trouvée.' });
+            }
+
+            // Étape 3 : Supprimer les produits existants pour cette commande
+            const deleteProductsQuery = `
+                DELETE FROM ProductOrder
+                WHERE orderId = ?
             `;
 
-            const productValues = products.map(product => [orderId, product.productId, product.quantity]);
-
-            connection.query(insertProductQuery, [productValues], (err) => {
+            connection.query(deleteProductsQuery, [orderId], (err) => {
                 if (err) {
-                    console.error('Erreur SQL lors de l’ajout des nouveaux produits :', err.message);
-                    return res.status(500).json({ error: 'Erreur lors de l’ajout des nouveaux produits.' });
+                    console.error('Erreur SQL lors de la suppression des anciens produits :', err.message);
+                    return res.status(500).json({ error: 'Erreur lors de la suppression des anciens produits.' });
                 }
 
-                res.status(200).json({ message: 'Commande mise à jour avec succès.' });
+                // Étape 4 : Ajouter les nouveaux produits
+                const insertProductQuery = `
+                    INSERT INTO ProductOrder (orderId, productId, quantity)
+                    VALUES ?
+                `;
+
+                const productValues = products.map(product => [orderId, product.productId, product.quantity]);
+
+                connection.query(insertProductQuery, [productValues], (err) => {
+                    if (err) {
+                        console.error('Erreur SQL lors de l’ajout des nouveaux produits :', err.message);
+                        return res.status(500).json({ error: 'Erreur lors de l’ajout des nouveaux produits.' });
+                    }
+
+                    res.status(200).json({ message: 'Commande mise à jour avec succès.' });
+                });
             });
         });
     });

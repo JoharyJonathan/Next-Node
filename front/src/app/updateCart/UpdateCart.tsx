@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
 export default function UpdateCart() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [products, setProducts] = useState([]);
+    const [selectedProductId, setSelectedProductId] = useState("");
+    const router = useRouter();
 
     // Récupérer le userId dans le token
     const token = localStorage.getItem("token");
@@ -28,18 +32,34 @@ export default function UpdateCart() {
             }
         };
 
+        const fetchProducts = async () => {
+            try {
+                const response = await axios.get("http://localhost:5000/product/all");
+                setProducts(response.data);
+            } catch (error) {
+                console.error("Erreur lors de la recuperation de produits", error);
+            }
+        }
+
         fetchOrders();
+        fetchProducts();
     }, [userId]);
 
     const handleProductChange = (orderId, productId, field, value) => {
         setOrders((prevOrders) =>
             prevOrders.map((order) => {
                 if (order.orderId === orderId) {
-                    const updatedProducts = order.products.map((product) =>
-                        product.productId === productId
-                            ? { ...product, [field]: value }
-                            : product
-                    );
+                    const updatedProducts = order.products.map((product) => {
+                        if (product.productId === productId) {
+                            const selectedProduct = products.find((p) => p.id === parseInt(productId));
+                            if (field === "quantity") {
+                                const maxQuantity = selectedProduct ? selectedProduct.stock : 0;
+                                value = Math.min(parseInt(value), maxQuantity); // Limiter au stock disponible
+                            }
+                            return { ...product, [field]: value };
+                        }
+                        return product;
+                    });
                     return {
                         ...order,
                         products: updatedProducts,
@@ -49,7 +69,7 @@ export default function UpdateCart() {
                 return order;
             })
         );
-    };    
+    };        
 
     const handleOrderChange = (orderId, field, value) => {
         setOrders((prevOrders) =>
@@ -59,8 +79,13 @@ export default function UpdateCart() {
         );
     };
 
-    const addProduct = (orderId) => {
-        const newProduct = { productId: Date.now(), productName: "", quantity: 1 };
+    const addProduct = (orderId, product) => {
+        const newProduct = {
+            productId: product.id,
+            productName: product.name,
+            quantity: 1,
+            price: product.price || 0,
+        };
         setOrders((prevOrders) =>
             prevOrders.map((order) =>
                 order.orderId === orderId
@@ -68,7 +93,7 @@ export default function UpdateCart() {
                     : order
             )
         );
-    };
+    };    
 
     const removeProduct = (orderId, productId) => {
         setOrders((prevOrders) =>
@@ -95,6 +120,7 @@ export default function UpdateCart() {
                 products: order.products,
             });
             alert("Commande mise à jour avec succès.");
+            router.push('/cart');
         } catch (error) {
             console.error("Erreur lors de la mise à jour de la commande:", error);
             alert("Échec de la mise à jour.");
@@ -200,9 +226,31 @@ export default function UpdateCart() {
                         </div>
                     ))}
                     <div className="mt-6 flex space-x-4">
+                        <select
+                            value={selectedProductId}
+                            onChange={(e) => setSelectedProductId(e.target.value)}
+                            className="flex-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        >
+                            <option value="" disabled>Choisir un produit</option>
+                            {products.map((product) => (
+                                <option key={product.id} value={product.id}>
+                                    {product.name} (Stock : {product.stock})
+                                </option>
+                            ))}
+                        </select>
                         <button
                             type="button"
-                            onClick={() => addProduct(order.orderId)}
+                            onClick={() => {
+                                if (selectedProductId) {
+                                    const selectedProduct = products.find(
+                                        (p) => p.id === parseInt(selectedProductId)
+                                    );
+                                    if (selectedProduct) {
+                                        addProduct(order.orderId, selectedProduct);
+                                        setSelectedProductId(""); // Réinitialiser la sélection
+                                    }
+                                }
+                            }}
                             className="bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 rounded-md"
                         >
                             Ajouter un produit
