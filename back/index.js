@@ -14,6 +14,9 @@ const productRoutes = require('./products/product');
 // Commands endpoints
 const commandsRoutes = require('./order/order');
 
+// Payments endpoints
+const paymentsRoutes = require('./payment/payment');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -21,6 +24,7 @@ app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/product', productRoutes);
 app.use('/order', commandsRoutes);
+app.use('/pay', paymentsRoutes);
 
 // Test message
 app.get('/api/message', (req, res) => {
